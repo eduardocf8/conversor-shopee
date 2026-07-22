@@ -130,6 +130,79 @@
     line-height: 1.9;
   }
   .passos h3 { font-size: 15px; color: var(--texto); margin-bottom: 8px; }
+
+  /* ===== ANIMAÇÕES / MOVIMENTO ===== */
+
+  /* Botão "respirando" (pulsando) + brilho passando por cima */
+  @keyframes pulsar {
+    0%   { transform: scale(1);    box-shadow: 0 0 0 0 rgba(238, 77, 45, 0.5); }
+    70%  { transform: scale(1.03); box-shadow: 0 0 0 14px rgba(238, 77, 45, 0); }
+    100% { transform: scale(1);    box-shadow: 0 0 0 0 rgba(238, 77, 45, 0); }
+  }
+  @keyframes brilho {
+    0%   { left: -60%; }
+    100% { left: 130%; }
+  }
+  button#btn {
+    position: relative;
+    overflow: hidden;
+    animation: pulsar 1.8s infinite;
+  }
+  /* faixa de brilho que atravessa o botão */
+  button#btn::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -60%;
+    width: 40%;
+    height: 100%;
+    background: linear-gradient(120deg, transparent, rgba(255,255,255,0.5), transparent);
+    transform: skewX(-20deg);
+    animation: brilho 2.5s infinite;
+  }
+  /* enquanto estiver gerando, para de pulsar pra não confundir */
+  button#btn:disabled { animation: none; }
+  button#btn:disabled::after { display: none; }
+
+  /* Faixa de urgência (fogo) */
+  .urgencia {
+    background: #fff0eb;
+    color: var(--laranja-escuro);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 12px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    animation: tremer 3s infinite;
+  }
+  @keyframes tremer {
+    0%, 92%, 100% { transform: translateX(0); }
+    94% { transform: translateX(-2px); }
+    96% { transform: translateX(2px); }
+    98% { transform: translateX(-1px); }
+  }
+
+  /* Contador "pessoas ativando agora" com pontinho verde piscando */
+  .ativando {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    font-size: 13px;
+    color: var(--cinza);
+    margin-bottom: 20px;
+  }
+  .ponto-verde {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #22c55e;
+    animation: piscar 1.4s infinite;
+  }
+  @keyframes piscar {
+    0%, 100% { opacity: 1;   transform: scale(1); }
+    50%      { opacity: 0.3; transform: scale(0.8); }
+  }
 </style>
 </head>
 <body>
@@ -138,6 +211,12 @@
     <img src="foto.jpg" alt="Foto" class="foto" onerror="this.style.display='none'">
     <h1>Gerador de Descontos Shopee</h1>
     <p class="sub">Cupom exclusivo • cole seu link e ganhe desconto</p>
+
+    <div class="urgencia">🔥 Restam poucos cupons disponíveis hoje!</div>
+    <div class="ativando">
+      <span class="ponto-verde"></span>
+      <span id="contador">127 pessoas ativando desconto agora</span>
+    </div>
 
     <label class="label" for="link">Link do produto na Shopee</label>
     <input type="text" id="link" placeholder="Cole aqui o link do produto...">
@@ -219,6 +298,18 @@
   document.getElementById("link").addEventListener("keypress", function(e) {
     if (e.key === "Enter") converter();
   });
+
+  // Faz o número de "pessoas ativando" variar sozinho, dando sensação de movimento
+  (function animarContador() {
+    const el = document.getElementById("contador");
+    let base = 127;
+    setInterval(function() {
+      // varia entre -3 e +4 pessoas, sem descer demais
+      const variacao = Math.floor(Math.random() * 8) - 3;
+      base = Math.max(112, Math.min(168, base + variacao));
+      el.textContent = base + " pessoas ativando desconto agora";
+    }, 3000);
+  })();
 </script>
 </body>
 </html>
