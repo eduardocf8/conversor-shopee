@@ -16,7 +16,11 @@ module.exports = async (req, res) => {
   // Pega o link que a pessoa colou no site
   const linkOriginal = (req.body && req.body.link ? req.body.link : "").trim();
 
-  if (!linkOriginal || !linkOriginal.includes("shopee")) {
+  // Aceita tanto o link completo (shopee.com.br) quanto o encurtado (shp.ee)
+  const ehLinkShopee =
+    linkOriginal.includes("shopee") || linkOriginal.includes("shp.ee");
+
+  if (!linkOriginal || !ehLinkShopee) {
     return res.status(400).json({ erro: "Cole um link válido da Shopee." });
   }
 
@@ -65,7 +69,7 @@ module.exports = async (req, res) => {
       dados.data.generateShortLink.shortLink;
 
     if (!linkConvertido) {
-      return res.status(400).json({ erro: "Não foi possível gerar o link. Confira se o link do produto está correto." });
+      return res.status(400).json({ erro: "Não foi possível gerar o link. Se você colou um link curto (br.shp.ee), tente abrir ele e copiar o link completo do produto que aparece no navegador." });
     }
 
     return res.status(200).json({ link: linkConvertido });
