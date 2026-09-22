@@ -182,27 +182,6 @@
     98% { transform: translateX(-1px); }
   }
 
-  /* Contador "pessoas ativando agora" com pontinho verde piscando */
-  .ativando {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 7px;
-    font-size: 13px;
-    color: var(--cinza);
-    margin-bottom: 20px;
-  }
-  .ponto-verde {
-    width: 9px;
-    height: 9px;
-    border-radius: 50%;
-    background: #22c55e;
-    animation: piscar 1.4s infinite;
-  }
-  @keyframes piscar {
-    0%, 100% { opacity: 1;   transform: scale(1); }
-    50%      { opacity: 0.3; transform: scale(0.8); }
-  }
 </style>
 </head>
 <body>
@@ -213,10 +192,6 @@
     <p class="sub">Cupom exclusivo • cole seu link e ganhe desconto</p>
 
     <div class="urgencia">🔥 Restam poucos cupons disponíveis hoje!</div>
-    <div class="ativando">
-      <span class="ponto-verde"></span>
-      <span id="contador">127 pessoas ativando desconto agora</span>
-    </div>
 
     <label class="label" for="link">Link do produto na Shopee</label>
     <input type="text" id="link" placeholder="Cole aqui o link do produto...">
@@ -298,18 +273,6 @@
   document.getElementById("link").addEventListener("keypress", function(e) {
     if (e.key === "Enter") converter();
   });
-
-  // Faz o número de "pessoas ativando" variar sozinho, dando sensação de movimento
-  (function animarContador() {
-    const el = document.getElementById("contador");
-    let base = 127;
-    setInterval(function() {
-      // varia entre -3 e +4 pessoas, sem descer demais
-      const variacao = Math.floor(Math.random() * 8) - 3;
-      base = Math.max(112, Math.min(168, base + variacao));
-      el.textContent = base + " pessoas ativando desconto agora";
-    }, 3000);
-  })();
 </script>
 </body>
 </html>
