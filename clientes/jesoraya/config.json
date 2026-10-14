@@ -1,0 +1,21 @@
+{
+  "nome": "jesoraya",
+  "titulo": "Gerador de Links Shopee • jesoraya",
+  "subtitulo": "Cupom exclusivo • cole seu link e ganhe desconto",
+  "descricao": "Cole o link do produto da Shopee e ganhe o cupom exclusivo da jesoraya.",
+  "texto_botao": "💰 Gerar link com desconto",
+  "mostrar_faixa_cupons": true,
+  "texto_faixa_cupons": "🔥 Restam poucos cupons disponíveis hoje!",
+  "cores": {
+    "principal": "#ee4d2d",
+    "escura": "#d73211",
+    "fundo": "#fff5f2"
+  },
+  "sub_id": "siteconversor",
+  "cloudflare": {
+    "conta": "clientes",
+    "tipo": "pages",
+    "nome_projeto": "jesoraya",
+    "account_id": "7a7caf0c09a4718a967e1d56cc33ce25"
+  }
+}
