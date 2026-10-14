@@ -1,0 +1,19 @@
+{
+  "nome": "vegrassi",
+  "titulo": "Gerador de Links Shopee • vegrassi",
+  "subtitulo": "Cupom exclusivo • cole seu link e ganhe desconto",
+  "descricao": "Cole o link do produto da Shopee e ganhe o cupom exclusivo da vegrassi.",
+  "texto_botao": "💰 Gerar link com desconto",
+  "mostrar_faixa_cupons": true,
+  "texto_faixa_cupons": "🔥 Restam poucos cupons disponíveis hoje!",
+  "cores": {
+    "principal": "#ee4d2d",
+    "escura": "#d73211",
+    "fundo": "#fff5f2"
+  },
+  "sub_id": "site",
+  "cloudflare": {
+    "nome_worker": "link-vegrassi",
+    "account_id": ""
+  }
+}

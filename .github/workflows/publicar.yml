@@ -1,0 +1,36 @@
+name: Publicar site de cliente
+
+# Rodar em: aba Actions -> "Publicar site de cliente" -> Run workflow
+on:
+  workflow_dispatch:
+    inputs:
+      cliente:
+        description: "Nome da pasta do cliente em clientes/ (ex: vegrassi)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publicar-${{ inputs.cliente }}
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    env:
+      CLIENTE: ${{ inputs.cliente }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - name: Monta o site
+        run: node scripts/montar.js "$CLIENTE" --publicar
+      - name: Publica na Cloudflare
+        run: npx wrangler deploy --config "dist/$CLIENTE/wrangler.jsonc"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

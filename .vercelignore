@@ -1,1 +1,11 @@
 test/
+src/
+scripts/
+modelo/
+clientes/
+dist/
+node_modules/
+.github/
+package.json
+package-lock.json
+GUIA.md
