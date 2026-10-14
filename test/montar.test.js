@@ -163,7 +163,7 @@ test("sub_id, tipo, nome do projeto e account_id são validados", () => {
 });
 
 test("publicar exige account_id; com ele, vai pro wrangler", () => {
-  assert.throws(() => montarCom(com({}), { publicar: true }), /account_id/);
+  assert.throws(() => montarCom(com({ cloudflare: { ...BASE.cloudflare, account_id: "" } }), { publicar: true }), /account_id/);
   const id = "0123456789abcdef0123456789abcdef";
   const workers = montarCom(com({ cloudflare: { ...BASE.cloudflare, tipo: "workers", account_id: id } }), { publicar: true });
   assert.equal(workers.wrangler.account_id, id);
