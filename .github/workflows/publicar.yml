@@ -32,9 +32,21 @@ jobs:
         run: node scripts/montar.js "$CLIENTE" --publicar
       - name: Publica na Cloudflare
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          TOKEN_PESSOAL: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          TOKEN_CLIENTES: ${{ secrets.CLOUDFLARE_API_TOKEN_CLIENTES }}
         run: |
           cd "dist/$CLIENTE"
+          # Cada conta Cloudflare tem o seu token (ver GUIA.md, seção 1)
+          CONTA=$(node -p 'require("./publicar.json").conta')
+          if [ "$CONTA" = "pessoal" ]; then
+            export CLOUDFLARE_API_TOKEN="$TOKEN_PESSOAL"; SECRET_ESPERADO=CLOUDFLARE_API_TOKEN
+          else
+            export CLOUDFLARE_API_TOKEN="$TOKEN_CLIENTES"; SECRET_ESPERADO=CLOUDFLARE_API_TOKEN_CLIENTES
+          fi
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::error::Falta o secret $SECRET_ESPERADO no GitHub (Settings -> Secrets and variables -> Actions)."
+            exit 1
+          fi
           TIPO=$(node -p 'require("./publicar.json").tipo')
           NOME=$(node -p 'require("./publicar.json").nome')
           export CLOUDFLARE_ACCOUNT_ID=$(node -p 'require("./publicar.json").account_id')
