@@ -54,10 +54,57 @@ test("textos e cores do cliente vão pra página", () => {
   assert.ok(html.includes("<h1>Links da Fulana</h1>"));
   assert.ok(html.includes('<button id="btn">Gerar!</button>'));
   assert.ok(html.includes("--laranja: #123456;"));
-  assert.equal(wrangler.vars.SUB_ID, "fulana1");
-  assert.equal(wrangler.name, BASE.cloudflare.nome_worker);
-  assert.deepEqual(wrangler.assets.run_worker_first, ["/api/*"]);
+  assert.equal(wrangler.name, BASE.cloudflare.nome_projeto);
   assert.equal(wrangler.ratelimits[0].name, "LIMITADOR");
+});
+
+test("tipo workers: wrangler.jsonc de Worker com SUB_ID nas vars", () => {
+  const { wrangler, destino } = montarCom(com({ sub_id: "fulana1", cloudflare: { ...BASE.cloudflare, tipo: "workers" } }));
+  assert.equal(wrangler.main, "../../src/worker.js");
+  assert.equal(wrangler.vars.SUB_ID, "fulana1");
+  assert.deepEqual(wrangler.assets.run_worker_first, ["/api/*"]);
+  assert.ok(!fs.existsSync(path.join(destino, "functions")));
+  assert.equal(JSON.parse(fs.readFileSync(path.join(destino, "publicar.json"))).tipo, "workers");
+});
+
+test("tipo pages: wrangler.jsonc de Pages e função com o SUB_ID do cliente", () => {
+  const { wrangler, destino } = montarCom(com({ sub_id: "fulana1", cloudflare: { ...BASE.cloudflare, tipo: "pages" } }));
+  assert.equal(wrangler.pages_build_output_dir, "./public");
+  assert.equal(wrangler.main, undefined);
+  const funcao = fs.readFileSync(path.join(destino, "functions/api/converter.js"), "utf8");
+  assert.ok(funcao.includes('const SUB_ID = "fulana1";'));
+  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(destino, "publicar.json"))), {
+    tipo: "pages",
+    nome: BASE.cloudflare.nome_projeto,
+    account_id: BASE.cloudflare.account_id,
+  });
+});
+
+test("função do Pages gerada converte de verdade usando o SUB_ID do cliente", async () => {
+  const raiz = projeto(com({ sub_id: "subDoCliente", cloudflare: { ...BASE.cloudflare, tipo: "pages" } }), { cliente: "teste-funcao" });
+  const saida = fs.mkdtempSync(path.join(os.tmpdir(), "dist-"));
+  try {
+    const destino = montar("teste-funcao", { raiz, saida });
+    // Fora do repositório o import relativo não acha src/; aponta pro src/ real só neste teste
+    const arquivo = path.join(destino, "functions/api/converter.js");
+    fs.writeFileSync(arquivo, fs.readFileSync(arquivo, "utf8").replace("../../../../src/converter.js", path.join(RAIZ_REAL, "src/converter.js")));
+    const { onRequest } = await import(arquivo);
+    let query;
+    global.fetch = async (url, opts) => {
+      query = JSON.parse(opts.body).query;
+      return new Response(JSON.stringify({ data: { generateShortLink: { shortLink: "https://s.shopee.com.br/OK" } } }));
+    };
+    const request = new Request("https://fulana.pages.dev/api/converter", {
+      method: "POST",
+      headers: { "content-type": "application/json", "cf-connecting-ip": "1.2.3.4" },
+      body: JSON.stringify({ link: "https://shopee.com.br/a-i.1.2" }),
+    });
+    const resposta = await onRequest({ request, env: { SHOPEE_APP_ID: "a", SHOPEE_SECRET: "b", SUB_ID: "tentativa-de-troca" } });
+    assert.equal(resposta.status, 200);
+    assert.ok(query.includes('subIds:["subDoCliente"]'), query);
+  } finally {
+    fs.rmSync(saida, { recursive: true, force: true });
+  }
 });
 
 test("faixa de cupons liga e desliga", () => {
@@ -94,12 +141,15 @@ test("cor fora do formato #RRGGBB é recusada (sem injeção de CSS)", () => {
   }
 });
 
-test("sub_id, nome do worker e account_id são validados", () => {
+test("sub_id, tipo, nome do projeto e account_id são validados", () => {
   for (const sub_id of ["com espaço", "acentuação", "a-b", "", "x".repeat(101)]) {
     assert.throws(() => montarCom(com({ sub_id })), ConfigInvalida, sub_id);
   }
-  for (const nome_worker of ["Maiusculo", "-comeca", "termina-", "tem_underline", "a".repeat(64), "../x"]) {
-    assert.throws(() => montarCom(com({ cloudflare: { ...BASE.cloudflare, nome_worker } })), ConfigInvalida, nome_worker);
+  for (const nome_projeto of ["Maiusculo", "-comeca", "termina-", "tem_underline", "a".repeat(59), "../x", ""]) {
+    assert.throws(() => montarCom(com({ cloudflare: { ...BASE.cloudflare, nome_projeto } })), ConfigInvalida, nome_projeto);
+  }
+  for (const tipo of ["Pages", "vercel", "", true]) {
+    assert.throws(() => montarCom(com({ cloudflare: { ...BASE.cloudflare, tipo } })), ConfigInvalida, String(tipo));
   }
   for (const account_id of ["123", "G".repeat(32), "a".repeat(33)]) {
     assert.throws(() => montarCom(com({ cloudflare: { ...BASE.cloudflare, account_id } })), ConfigInvalida, account_id);
@@ -109,8 +159,10 @@ test("sub_id, nome do worker e account_id são validados", () => {
 test("publicar exige account_id; com ele, vai pro wrangler", () => {
   assert.throws(() => montarCom(com({}), { publicar: true }), /account_id/);
   const id = "0123456789abcdef0123456789abcdef";
-  const { wrangler } = montarCom(com({ cloudflare: { ...BASE.cloudflare, account_id: id } }), { publicar: true });
-  assert.equal(wrangler.account_id, id);
+  const workers = montarCom(com({ cloudflare: { ...BASE.cloudflare, tipo: "workers", account_id: id } }), { publicar: true });
+  assert.equal(workers.wrangler.account_id, id);
+  const pages = montarCom(com({ cloudflare: { ...BASE.cloudflare, tipo: "pages", account_id: id } }), { publicar: true });
+  assert.equal(JSON.parse(fs.readFileSync(path.join(pages.destino, "publicar.json"))).account_id, id);
 });
 
 test("campo faltando, sobrando ou com tipo errado é recusado", () => {
