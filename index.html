@@ -187,7 +187,7 @@
 <body>
   <div class="card">
     <!-- Troque a foto pelo arquivo da sua esposa (foto.jpg) -->
-    <img src="foto.jpg" alt="Foto" class="foto" onerror="this.style.display='none'">
+    <img src="foto.jpg" alt="Foto" class="foto">
     <h1>Gerador de Links Shopee • vegrassi</h1>
     <p class="sub">Cupom exclusivo • cole seu link e ganhe desconto</p>
 
@@ -195,15 +195,15 @@
 
     <label class="label" for="link">Link do produto na Shopee</label>
     <input type="text" id="link" placeholder="Cole aqui o link do produto...">
-    <button id="btn" onclick="converter()">💰 Gerar link com desconto</button>
+    <button id="btn">💰 Gerar link com desconto</button>
 
     <div class="erro" id="erro"></div>
 
     <div class="resultado" id="resultado">
       <div class="link-box" id="linkBox"></div>
       <div class="acoes">
-        <a id="abrir" href="#" target="_blank">Abrir produto</a>
-        <span class="copiar" onclick="copiar()">Copiar link</span>
+        <a id="abrir" href="#" target="_blank" rel="noopener noreferrer">Abrir produto</a>
+        <span class="copiar" id="copiar">Copiar link</span>
       </div>
     </div>
 
@@ -216,63 +216,6 @@
     </div>
   </div>
 
-<script>
-  async function converter() {
-    const link = document.getElementById("link").value.trim();
-    const btn = document.getElementById("btn");
-    const erro = document.getElementById("erro");
-    const resultado = document.getElementById("resultado");
-
-    erro.classList.remove("mostrar");
-    resultado.classList.remove("mostrar");
-
-    if (!link) {
-      erro.textContent = "Cole o link do produto primeiro.";
-      erro.classList.add("mostrar");
-      return;
-    }
-
-    btn.disabled = true;
-    btn.textContent = "Gerando...";
-
-    try {
-      const resp = await fetch("/api/converter", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ link: link }),
-      });
-      const dados = await resp.json();
-
-      if (!resp.ok || dados.erro) {
-        erro.textContent = dados.erro || "Algo deu errado. Tente de novo.";
-        erro.classList.add("mostrar");
-      } else {
-        document.getElementById("linkBox").textContent = dados.link;
-        document.getElementById("abrir").href = dados.link;
-        resultado.classList.add("mostrar");
-      }
-    } catch (e) {
-      erro.textContent = "Erro de conexão. Tente novamente.";
-      erro.classList.add("mostrar");
-    }
-
-    btn.disabled = false;
-    btn.textContent = "💰 Gerar link com desconto";
-  }
-
-  function copiar() {
-    const texto = document.getElementById("linkBox").textContent;
-    navigator.clipboard.writeText(texto);
-    const btn = document.querySelector(".copiar");
-    const original = btn.textContent;
-    btn.textContent = "Copiado! ✓";
-    setTimeout(() => { btn.textContent = original; }, 1500);
-  }
-
-  // Permite gerar apertando Enter
-  document.getElementById("link").addEventListener("keypress", function(e) {
-    if (e.key === "Enter") converter();
-  });
-</script>
+<script src="app.js"></script>
 </body>
 </html>
