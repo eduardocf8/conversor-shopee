@@ -140,13 +140,13 @@ function gerarWranglerWorkers(config) {
   return JSON.stringify(wrangler, null, 2) + "\n";
 }
 
-// No Pages o account_id vai pela variável CLOUDFLARE_ACCOUNT_ID (ver publicar.yml)
+// No Pages o account_id vai pela variável CLOUDFLARE_ACCOUNT_ID (ver publicar.yml).
+// O Pages não aceita o limitador nativo ("ratelimits"); fica só o limite por IP do converter.js.
 function gerarWranglerPages(config) {
   const wrangler = {
     name: config.cloudflare.nome_projeto,
     pages_build_output_dir: "./public",
     compatibility_date: "2026-09-01",
-    ratelimits: LIMITADOR,
   };
   return JSON.stringify(wrangler, null, 2) + "\n";
 }
