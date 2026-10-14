@@ -45,6 +45,7 @@ function pegarIp(req) {
 }
 
 function ehDoDominio(host, dominios) {
+  host = host.toLowerCase();
   return dominios.some((d) => host === d || host.endsWith("." + d));
 }
 
@@ -55,7 +56,7 @@ function extrairLinkShopee(texto) {
   for (const candidato of candidatos) {
     try {
       const url = new URL(candidato);
-      if ((url.protocol === "https:" || url.protocol === "http:") && ehDoDominio(url.hostname.toLowerCase(), DOMINIOS_SHOPEE)) {
+      if ((url.protocol === "https:" || url.protocol === "http:") && !url.port && !url.username && ehDoDominio(url.hostname, DOMINIOS_SHOPEE)) {
         return url;
       }
     } catch (e) {
@@ -99,7 +100,7 @@ async function resolverLinkCurto(url) {
     } catch (e) {
       return null;
     }
-    if (proximo.protocol !== "https:" || !ehDoDominio(proximo.hostname.toLowerCase(), DOMINIOS_SHOPEE)) {
+    if (proximo.protocol !== "https:" || proximo.port || !ehDoDominio(proximo.hostname, DOMINIOS_SHOPEE)) {
       return null;
     }
 
@@ -112,18 +113,60 @@ async function resolverLinkCurto(url) {
   return null;
 }
 
+// Pedido feito por outro site (ex: um site malicioso disparando conversões pelo
+// navegador de quem o visita). Pedidos sem Origin (curl, servidores) não dá pra
+// barrar por aqui — pra esses existe o limite por IP.
+function veioDeOutroSite(req) {
+  const origem = req.headers.origin;
+  if (!origem) return false;
+  try {
+    return new URL(origem).host !== req.headers.host;
+  } catch (e) {
+    return true;
+  }
+}
+
+// Só devolve pro navegador um link https da própria Shopee
+function ehLinkShopeeSeguro(link) {
+  try {
+    const url = new URL(link);
+    return url.protocol === "https:" && ehDoDominio(url.hostname, DOMINIOS_SHOPEE);
+  } catch (e) {
+    return false;
+  }
+}
+
 module.exports = async (req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+
   // Só aceita POST
   if (req.method !== "POST") {
+    res.setHeader("Allow", "POST");
     return res.status(405).json({ erro: "Método não permitido" });
+  }
+
+  if (veioDeOutroSite(req)) {
+    return res.status(403).json({ erro: "Origem não permitida." });
+  }
+
+  // Só JSON: um formulário de outro site não consegue mandar JSON sem a
+  // permissão do navegador (CORS), que este endpoint nunca dá.
+  if (!String(req.headers["content-type"] || "").toLowerCase().startsWith("application/json")) {
+    return res.status(415).json({ erro: "Formato não suportado." });
   }
 
   if (passouDoLimite(pegarIp(req))) {
     return res.status(429).json({ erro: "Muitos links em pouco tempo. Espere alguns minutos e tente de novo." });
   }
 
-  // Pega o que a pessoa colou no site
-  const textoColado = (req.body && typeof req.body.link === "string" ? req.body.link : "").trim().slice(0, 2000);
+  // Pega o que a pessoa colou no site (JSON malformado faz o req.body da Vercel lançar erro)
+  let corpo;
+  try {
+    corpo = req.body;
+  } catch (e) {
+    return res.status(400).json({ erro: "Cole um link válido da Shopee." });
+  }
+  const textoColado = (corpo && typeof corpo.link === "string" ? corpo.link : "").trim().slice(0, 2000);
 
   // Aceita tanto o link completo (shopee.com.br) quanto o encurtado (shp.ee),
   // mesmo que venha com texto junto
@@ -142,7 +185,7 @@ module.exports = async (req, res) => {
   }
 
   let linkOriginal = url.href;
-  if (ehDoDominio(url.hostname.toLowerCase(), DOMINIOS_LINK_CURTO)) {
+  if (ehDoDominio(url.hostname, DOMINIOS_LINK_CURTO)) {
     linkOriginal = (await resolverLinkCurto(url)) || linkOriginal;
   }
 
@@ -172,10 +215,11 @@ module.exports = async (req, res) => {
 
     const dados = await resposta.json();
 
-    // Trata erros vindos da Shopee
+    // Trata erros vindos da Shopee. O detalhe fica só no log da Vercel — pro visitante
+    // vai uma mensagem genérica, sem expor nada sobre as credenciais/conta.
     if (dados.errors && dados.errors.length) {
       console.error("[converter] erro da Shopee para", linkOriginal, JSON.stringify(dados.errors));
-      return res.status(400).json({ erro: dados.errors[0].message || "Erro na Shopee." });
+      return res.status(400).json({ erro: "A Shopee não conseguiu gerar o link desse produto. Confira o link e tente de novo." });
     }
 
     const linkConvertido =
@@ -184,7 +228,7 @@ module.exports = async (req, res) => {
       dados.data.generateShortLink &&
       dados.data.generateShortLink.shortLink;
 
-    if (!linkConvertido) {
+    if (!linkConvertido || !ehLinkShopeeSeguro(linkConvertido)) {
       return res.status(400).json({ erro: "Não foi possível gerar o link. Se você colou um link curto (br.shp.ee), tente abrir ele e copiar o link completo do produto que aparece no navegador." });
     }
 
