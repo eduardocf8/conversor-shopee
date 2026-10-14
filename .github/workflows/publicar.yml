@@ -31,6 +31,20 @@ jobs:
       - name: Monta o site
         run: node scripts/montar.js "$CLIENTE" --publicar
       - name: Publica na Cloudflare
-        run: npx wrangler deploy --config "dist/$CLIENTE/wrangler.jsonc"
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          cd "dist/$CLIENTE"
+          TIPO=$(node -p 'require("./publicar.json").tipo')
+          NOME=$(node -p 'require("./publicar.json").nome')
+          export CLOUDFLARE_ACCOUNT_ID=$(node -p 'require("./publicar.json").account_id')
+          if [ "$TIPO" = "pages" ]; then
+            # Cria o projeto Pages na primeira publicação
+            if ! npx wrangler pages project list --json | node ../../scripts/projeto-pages.js "$NOME" > /dev/null; then
+              npx wrangler pages project create "$NOME" --production-branch main
+            fi
+            npx wrangler pages deploy --project-name "$NOME" --branch main --commit-dirty=true
+            echo "Endereço do site: https://$(npx wrangler pages project list --json | node ../../scripts/projeto-pages.js "$NOME" | cut -d, -f1)"
+          else
+            npx wrangler deploy --config wrangler.jsonc
+          fi

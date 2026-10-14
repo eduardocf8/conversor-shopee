@@ -39,10 +39,9 @@ Você monta e publica tudo daqui do GitHub, sem instalar nada no computador.
 Mande pra ele estes passos:
 
 1. Criar conta grátis em <https://dash.cloudflare.com/sign-up> e ativar 2FA.
-2. No painel, abrir **Workers & Pages** uma vez e escolher o subdomínio `workers.dev`
-   (vira o endereço do site, ex: `fulana.workers.dev`).
+2. (Só se for usar o tipo `"workers"`) No painel, abrir **Workers & Pages** uma vez e escolher o subdomínio `workers.dev`.
 3. **Manage Account → Members → Invite**: convidar o seu e-mail com a função **Administrator**.
-4. Te mandar o **Account ID** (aparece na página inicial da conta, no lado direito, ou na URL do painel: 32 letras/números).
+4. Te mandar o **Account ID** (em **Workers & Pages**, no lado direito, ou na URL do painel: 32 letras/números).
 
 ### 2.3 Você cria a pasta do cliente
 
@@ -64,7 +63,8 @@ Mande pra ele estes passos:
   "cores": { "principal": "#ee4d2d", "escura": "#d73211", "fundo": "#fff5f2" },
   "sub_id": "site",
   "cloudflare": {
-    "nome_worker": "link-fulana",           // vira o endereço: link-fulana.<subdominio>.workers.dev
+    "tipo": "pages",                        // "pages" = fulana.pages.dev (recomendado) | "workers" = fulana.<conta>.workers.dev
+    "nome_projeto": "fulana",               // vira o endereço (minúsculas, números e hífen)
     "account_id": "cole aqui o Account ID do cliente"
   }
 }
@@ -80,16 +80,21 @@ para e diz exatamente o que corrigir.
 1. Aba **Actions → Publicar site de cliente → Run workflow**.
 2. Em *cliente*, digite o nome da pasta (ex: `fulana`) e clique em **Run workflow**.
 3. Em 1–2 minutos fica verde. O endereço do site aparece no final do passo "Publica na Cloudflare".
+   - No tipo `pages`, o nome `.pages.dev` é disputado com o mundo todo: se `fulana.pages.dev` já existir
+     em outra conta, a Cloudflare acrescenta letras (ex: `fulana-3xk.pages.dev`). Se não gostar, troque
+     o `nome_projeto` e publique de novo.
 
 ### 2.5 O cliente coloca as credenciais da Shopee (só ele vê)
 
 Faça junto com ele (chamada de vídeo, por exemplo), sem que ele te mande a Secret:
 
-1. Painel da Cloudflare dele → **Workers & Pages** → o worker `link-fulana` → **Settings → Variables and Secrets → Add**.
+1. Painel da Cloudflare dele → **Workers & Pages** → o projeto `fulana` → **Settings → Variables and Secrets → Add**
+   (no tipo `pages`, cadastre no ambiente **Production**).
 2. Adicionar dois itens do tipo **Secret**:
    - `SHOPEE_APP_ID` = App ID da Open API da Shopee
    - `SHOPEE_SECRET` = Secret da Open API da Shopee
-3. Salvar (**Deploy**).
+3. Salvar. No tipo `pages`, os Secrets só valem a partir da próxima publicação: rode
+   **Actions → Publicar site de cliente** de novo depois de salvar.
 
 ### 2.6 Testar e entregar
 
@@ -97,7 +102,8 @@ Faça junto com ele (chamada de vídeo, por exemplo), sem que ele te mande a Sec
 2. Tocar em **Abrir produto** e conferir que cai no produto certo.
 3. O cliente te remove de **Members** (opcional, mas recomendado). Depois disso, pra atualizar o site dele
    você precisa ser convidado de novo.
-4. Domínio próprio (opcional, pago pelo cliente): no worker → **Settings → Domains & Routes → Add → Custom domain**.
+4. Domínio próprio (opcional, pago pelo cliente): no projeto → **Custom domains** (Pages) ou
+   **Settings → Domains & Routes** (Workers).
 
 ---
 
@@ -110,19 +116,20 @@ Mudou texto, cor, foto ou saiu uma correção no modelo? Edite o que precisar e 
 ## 4. Se algo der errado
 
 - **"Credenciais não configuradas no servidor"**: faltam os Secrets do passo 2.5 (nomes exatos, tipo Secret).
-- **"A Shopee não conseguiu gerar o link"**: veja o motivo em Workers & Pages → worker → **Logs**
+- **"A Shopee não conseguiu gerar o link"**: veja o motivo em Workers & Pages → projeto → **Logs** (Workers)
+  ou → deployment → **Functions → Real-time logs** (Pages)
   (procure `[converter] erro da Shopee`). Credencial errada ou conta sem acesso à Open API são os casos comuns.
 - **Publicação falha com erro de autenticação**: você não é membro da conta do cliente, o token não tem
-  "All accounts", ou o `account_id` está errado.
-- **Publicação pede subdomínio workers.dev**: o cliente não fez o passo 2.2.2.
+  "All accounts" (ou não tem a permissão **Cloudflare Pages: Edit**, no tipo `pages`), ou o `account_id` está errado.
+- **Publicação pede subdomínio workers.dev** (tipo `workers`): o cliente não fez o passo 2.2.2.
 
 ## 5. Para quem mexe no código
 
 ```
 modelo/            página (index.html com {{MARCADORES}}, app.js, _headers com os cabeçalhos de segurança)
-src/               Worker da Cloudflare (converter.js = o conversor)
+src/               conversor (converter.js) e entrada do Worker (worker.js)
 clientes/<nome>/   config.json + foto.jpg de cada cliente
-scripts/montar.js  junta modelo + cliente em dist/<nome>/ e gera o wrangler.jsonc
+scripts/montar.js  junta modelo + cliente em dist/<nome>/ (página, wrangler.jsonc e, no Pages, functions/)
 test/              testes (npm test)
 ```
 

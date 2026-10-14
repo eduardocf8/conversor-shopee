@@ -5,7 +5,11 @@
 //   node scripts/montar.js <cliente> --publicar  -> idem, exigindo account_id (usado no deploy)
 //
 // Lê clientes/<cliente>/config.json e clientes/<cliente>/foto.jpg, valida tudo
-// e escreve dist/<cliente>/public/ (página) + dist/<cliente>/wrangler.jsonc (Worker).
+// e escreve em dist/<cliente>/:
+//   public/          a página
+//   wrangler.jsonc   configuração da Cloudflare
+//   functions/       (só no tipo "pages") o conversor como Pages Function
+//   publicar.json    tipo, nome e account_id, lidos pelo workflow de publicação
 
 const fs = require("fs");
 const path = require("path");
@@ -39,7 +43,8 @@ const ESQUEMA = {
   cores: { principal: cor, escura: cor, fundo: cor },
   sub_id: padrao(/^[A-Za-z0-9]{1,100}$/, "só letras sem acento e números (exigência da Shopee)"),
   cloudflare: {
-    nome_worker: padrao(/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/, "só letras minúsculas, números e hífen (vira o endereço do site)"),
+    tipo: padrao(/^(?:pages|workers)$/, 'use "pages" (endereço nome.pages.dev) ou "workers" (nome.<conta>.workers.dev)'),
+    nome_projeto: padrao(/^[a-z0-9](?:[a-z0-9-]{0,56}[a-z0-9])?$/, "só letras minúsculas, números e hífen, até 58 caracteres (vira o endereço do site)"),
     account_id: padrao(/^(?:[0-9a-f]{32})?$/, "copie o Account ID do painel da Cloudflare (32 letras/números)"),
   },
 };
@@ -113,10 +118,12 @@ function gerarHtml(modelo, config) {
   return html;
 }
 
-function gerarWrangler(config) {
+const LIMITADOR = [{ name: "LIMITADOR", namespace_id: "1001", simple: { limit: 10, period: 60 } }];
+
+function gerarWranglerWorkers(config) {
   const wrangler = {
     $schema: "../../node_modules/wrangler/config-schema.json",
-    name: config.cloudflare.nome_worker,
+    name: config.cloudflare.nome_projeto,
     main: "../../src/worker.js",
     compatibility_date: "2026-09-01",
     workers_dev: true,
@@ -126,11 +133,34 @@ function gerarWrangler(config) {
       run_worker_first: ["/api/*"],
     },
     vars: { SUB_ID: config.sub_id },
-    ratelimits: [{ name: "LIMITADOR", namespace_id: "1001", simple: { limit: 10, period: 60 } }],
+    ratelimits: LIMITADOR,
     observability: { enabled: true },
   };
   if (config.cloudflare.account_id) wrangler.account_id = config.cloudflare.account_id;
   return JSON.stringify(wrangler, null, 2) + "\n";
+}
+
+// No Pages o account_id vai pela variável CLOUDFLARE_ACCOUNT_ID (ver publicar.yml)
+function gerarWranglerPages(config) {
+  const wrangler = {
+    name: config.cloudflare.nome_projeto,
+    pages_build_output_dir: "./public",
+    compatibility_date: "2026-09-01",
+    ratelimits: LIMITADOR,
+  };
+  return JSON.stringify(wrangler, null, 2) + "\n";
+}
+
+// O Pages só roda funções da pasta functions/; o SUB_ID vai direto no código
+// porque as "vars" do arquivo de configuração não chegam às funções do Pages.
+function gerarFuncaoPages(config) {
+  return `// Gerado por scripts/montar.js — não edite à mão.
+import { tratarConversao } from "../../../../src/converter.js";
+
+const SUB_ID = ${JSON.stringify(config.sub_id)};
+
+export const onRequest = ({ request, env }) => tratarConversao(request, { ...env, SUB_ID });
+`;
 }
 
 function montar(cliente, { raiz = RAIZ, saida = path.join(raiz, "dist"), publicar = false } = {}) {
@@ -149,7 +179,15 @@ function montar(cliente, { raiz = RAIZ, saida = path.join(raiz, "dist"), publica
   fs.copyFileSync(path.join(modelo, "app.js"), path.join(publico, "app.js"));
   fs.copyFileSync(path.join(modelo, "_headers"), path.join(publico, "_headers"));
   fs.writeFileSync(path.join(publico, "foto.jpg"), foto);
-  fs.writeFileSync(path.join(destino, "wrangler.jsonc"), gerarWrangler(config));
+  if (config.cloudflare.tipo === "pages") {
+    fs.writeFileSync(path.join(destino, "wrangler.jsonc"), gerarWranglerPages(config));
+    fs.mkdirSync(path.join(destino, "functions", "api"), { recursive: true });
+    fs.writeFileSync(path.join(destino, "functions", "api", "converter.js"), gerarFuncaoPages(config));
+  } else {
+    fs.writeFileSync(path.join(destino, "wrangler.jsonc"), gerarWranglerWorkers(config));
+  }
+  const dadosPublicacao = { tipo: config.cloudflare.tipo, nome: config.cloudflare.nome_projeto, account_id: config.cloudflare.account_id };
+  fs.writeFileSync(path.join(destino, "publicar.json"), JSON.stringify(dadosPublicacao, null, 2) + "\n");
   return destino;
 }
 
