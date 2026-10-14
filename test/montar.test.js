@@ -55,7 +55,6 @@ test("textos e cores do cliente vão pra página", () => {
   assert.ok(html.includes('<button id="btn">Gerar!</button>'));
   assert.ok(html.includes("--laranja: #123456;"));
   assert.equal(wrangler.name, BASE.cloudflare.nome_projeto);
-  assert.equal(wrangler.ratelimits[0].name, "LIMITADOR");
 });
 
 test("tipo workers: wrangler.jsonc de Worker com SUB_ID nas vars", () => {
@@ -63,6 +62,7 @@ test("tipo workers: wrangler.jsonc de Worker com SUB_ID nas vars", () => {
   assert.equal(wrangler.main, "../../src/worker.js");
   assert.equal(wrangler.vars.SUB_ID, "fulana1");
   assert.deepEqual(wrangler.assets.run_worker_first, ["/api/*"]);
+  assert.equal(wrangler.ratelimits[0].name, "LIMITADOR");
   assert.ok(!fs.existsSync(path.join(destino, "functions")));
   assert.equal(JSON.parse(fs.readFileSync(path.join(destino, "publicar.json"))).tipo, "workers");
 });
@@ -71,6 +71,8 @@ test("tipo pages: wrangler.jsonc de Pages e função com o SUB_ID do cliente", (
   const { wrangler, destino } = montarCom(com({ sub_id: "fulana1", cloudflare: { ...BASE.cloudflare, tipo: "pages" } }));
   assert.equal(wrangler.pages_build_output_dir, "./public");
   assert.equal(wrangler.main, undefined);
+  // Pages recusa a publicação se a configuração tiver "ratelimits"
+  assert.equal(wrangler.ratelimits, undefined);
   const funcao = fs.readFileSync(path.join(destino, "functions/api/converter.js"), "utf8");
   assert.ok(funcao.includes('const SUB_ID = "fulana1";'));
   assert.deepEqual(JSON.parse(fs.readFileSync(path.join(destino, "publicar.json"))), {
