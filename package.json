@@ -1,0 +1,13 @@
+{
+  "name": "conversor-shopee",
+  "private": true,
+  "description": "Gerador de links de afiliado Shopee (Cloudflare Workers)",
+  "scripts": {
+    "test": "node --test test/*.test.js test/*.test.mjs",
+    "montar": "node scripts/montar.js",
+    "dev": "node scripts/montar.js exemplo && wrangler dev --config dist/exemplo/wrangler.jsonc"
+  },
+  "devDependencies": {
+    "wrangler": "4.140.0"
+  }
+}
