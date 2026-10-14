@@ -13,6 +13,7 @@
   },
   "sub_id": "site",
   "cloudflare": {
+    "conta": "clientes",
     "tipo": "pages",
     "nome_projeto": "fulana",
     "account_id": ""

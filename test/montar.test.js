@@ -76,6 +76,7 @@ test("tipo pages: wrangler.jsonc de Pages e função com o SUB_ID do cliente", (
   const funcao = fs.readFileSync(path.join(destino, "functions/api/converter.js"), "utf8");
   assert.ok(funcao.includes('const SUB_ID = "fulana1";'));
   assert.deepEqual(JSON.parse(fs.readFileSync(path.join(destino, "publicar.json"))), {
+    conta: BASE.cloudflare.conta,
     tipo: "pages",
     nome: BASE.cloudflare.nome_projeto,
     account_id: BASE.cloudflare.account_id,
@@ -149,6 +150,9 @@ test("sub_id, tipo, nome do projeto e account_id são validados", () => {
   }
   for (const nome_projeto of ["Maiusculo", "-comeca", "termina-", "tem_underline", "a".repeat(59), "../x", ""]) {
     assert.throws(() => montarCom(com({ cloudflare: { ...BASE.cloudflare, nome_projeto } })), ConfigInvalida, nome_projeto);
+  }
+  for (const conta of ["Clientes", "outra", "", null]) {
+    assert.throws(() => montarCom(com({ cloudflare: { ...BASE.cloudflare, conta } })), ConfigInvalida, String(conta));
   }
   for (const tipo of ["Pages", "vercel", "", true]) {
     assert.throws(() => montarCom(com({ cloudflare: { ...BASE.cloudflare, tipo } })), ConfigInvalida, String(tipo));

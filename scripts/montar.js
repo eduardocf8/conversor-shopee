@@ -9,7 +9,7 @@
 //   public/          a página
 //   wrangler.jsonc   configuração da Cloudflare
 //   functions/       (só no tipo "pages") o conversor como Pages Function
-//   publicar.json    tipo, nome e account_id, lidos pelo workflow de publicação
+//   publicar.json    conta, tipo, nome e account_id, lidos pelo workflow de publicação
 
 const fs = require("fs");
 const path = require("path");
@@ -43,6 +43,7 @@ const ESQUEMA = {
   cores: { principal: cor, escura: cor, fundo: cor },
   sub_id: padrao(/^[A-Za-z0-9]{1,100}$/, "só letras sem acento e números (exigência da Shopee)"),
   cloudflare: {
+    conta: padrao(/^(?:clientes|pessoal)$/, 'use "clientes" (conta Cloudflare dos clientes) ou "pessoal" (sua conta)'),
     tipo: padrao(/^(?:pages|workers)$/, 'use "pages" (endereço nome.pages.dev) ou "workers" (nome.<conta>.workers.dev)'),
     nome_projeto: padrao(/^[a-z0-9](?:[a-z0-9-]{0,56}[a-z0-9])?$/, "só letras minúsculas, números e hífen, até 58 caracteres (vira o endereço do site)"),
     account_id: padrao(/^(?:[0-9a-f]{32})?$/, "copie o Account ID do painel da Cloudflare (32 letras/números)"),
@@ -186,7 +187,7 @@ function montar(cliente, { raiz = RAIZ, saida = path.join(raiz, "dist"), publica
   } else {
     fs.writeFileSync(path.join(destino, "wrangler.jsonc"), gerarWranglerWorkers(config));
   }
-  const dadosPublicacao = { tipo: config.cloudflare.tipo, nome: config.cloudflare.nome_projeto, account_id: config.cloudflare.account_id };
+  const dadosPublicacao = { conta: config.cloudflare.conta, tipo: config.cloudflare.tipo, nome: config.cloudflare.nome_projeto, account_id: config.cloudflare.account_id };
   fs.writeFileSync(path.join(destino, "publicar.json"), JSON.stringify(dadosPublicacao, null, 2) + "\n");
   return destino;
 }

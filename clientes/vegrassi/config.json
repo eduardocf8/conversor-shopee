@@ -13,6 +13,7 @@
   },
   "sub_id": "site",
   "cloudflare": {
+    "conta": "pessoal",
     "tipo": "pages",
     "nome_projeto": "vegrassi",
     "account_id": "044405485bc84714357c3f8b671de32a"
