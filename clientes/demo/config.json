@@ -1,0 +1,21 @@
+{
+  "nome": "Sua Marca",
+  "titulo": "Gerador de Links Shopee • Sua Marca",
+  "subtitulo": "Cupom exclusivo • cole seu link e ganhe desconto",
+  "descricao": "Demonstração: gerador de links de afiliado Shopee com a sua marca.",
+  "texto_botao": "💰 Gerar link com desconto",
+  "mostrar_faixa_cupons": false,
+  "texto_faixa_cupons": "🔥 Restam poucos cupons disponíveis hoje!",
+  "cores": {
+    "principal": "#ee4d2d",
+    "escura": "#d73211",
+    "fundo": "#fff5f2"
+  },
+  "sub_id": "demo",
+  "cloudflare": {
+    "conta": "clientes",
+    "tipo": "pages",
+    "nome_projeto": "demo-gerador-shopee",
+    "account_id": "7a7caf0c09a4718a967e1d56cc33ce25"
+  }
+}
