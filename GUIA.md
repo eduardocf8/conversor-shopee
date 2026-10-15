@@ -70,7 +70,7 @@ Se mandar por mensagem mesmo assim, apague a mensagem depois de cadastrar (passo
 ```jsonc
 {
   "nome": "fulana",                         // aparece como texto alternativo da foto
-  "titulo": "Gerador de Links Shopee • fulana",
+  "titulo": "Gerador de Links Shopee • fulana",  // nome longo? use "Gerador de Links Shopee\nFulana de Tal" (\n = quebra de linha)
   "subtitulo": "Cupom exclusivo • cole seu link e ganhe desconto",
   "descricao": "Texto que aparece quando o link é compartilhado (WhatsApp, Instagram...)",
   "texto_botao": "💰 Gerar link com desconto",

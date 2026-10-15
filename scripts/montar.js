@@ -83,6 +83,9 @@ function lerConfig(cliente, raiz = RAIZ) {
     throw new ConfigInvalida(`config.json não é um JSON válido: ${e.message}`);
   }
   validar(config, ESQUEMA);
+  if ((config.titulo.match(/\n/g) || []).length > 1) {
+    throw new ConfigInvalida(`"titulo" pode ter no máximo uma quebra de linha (\\n).`);
+  }
   if (config.mostrar_faixa_cupons && !config.texto_faixa_cupons.trim()) {
     throw new ConfigInvalida(`"texto_faixa_cupons" não pode ficar vazio com a faixa ligada.`);
   }
@@ -103,7 +106,8 @@ function gerarHtml(modelo, config) {
   let html = modelo.replace(/<!--FAIXA_CUPONS-->\n?([\s\S]*?)<!--\/FAIXA_CUPONS-->\n?/, config.mostrar_faixa_cupons ? "$1" : "");
   const valores = {
     NOME: config.nome,
-    TITULO: config.titulo,
+    // Aba do navegador e prévia de link: uma linha só ("\n" vira " • ")
+    TITULO: config.titulo.replace(/\s*\n\s*/g, " • "),
     SUBTITULO: config.subtitulo,
     DESCRICAO: config.descricao,
     TEXTO_BOTAO: config.texto_botao,
@@ -113,6 +117,8 @@ function gerarHtml(modelo, config) {
     COR_FUNDO: config.cores.fundo,
   };
   html = html.replace(/\{\{([A-Z_]+)\}\}/g, (_, chave) => {
+    // Título da página: "\n" no config vira quebra de linha (<br>), depois de escapar o texto
+    if (chave === "TITULO_LINHAS") return escaparHtml(config.titulo).replace(/\s*\n\s*/g, "<br>");
     if (!(chave in valores)) throw new Error(`Marcador desconhecido no modelo: {{${chave}}}`);
     return escaparHtml(valores[chave]);
   });
