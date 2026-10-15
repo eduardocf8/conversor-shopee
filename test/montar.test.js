@@ -133,6 +133,15 @@ test("textos com HTML/JS são escapados (sem XSS pela config)", () => {
   assert.equal((html.match(/<script/g) || []).length, 1);
 });
 
+test("título com \\n (quebra de linha) quebra a linha na página e vira ' • ' na aba", () => {
+  const { html } = montarCom(com({ titulo: "Gerador de Links Shopee\nNathy <Z>" }));
+  assert.ok(html.includes("<h1>Gerador de Links Shopee<br>Nathy &lt;Z&gt;</h1>"), html.match(/<h1>.*<\/h1>/)[0]);
+  assert.ok(html.includes("<title>Gerador de Links Shopee • Nathy &lt;Z&gt;</title>"));
+  assert.ok(html.includes('<meta property="og:title" content="Gerador de Links Shopee • Nathy &lt;Z&gt;">'));
+  assert.equal((html.match(/<h1>.*<\/h1>/)[0].match(/<br>/g) || []).length, 1);
+  assert.throws(() => montarCom(com({ titulo: "a\nb\nc" })), /quebra de linha/);
+});
+
 test("marcadores {{...}} digitados no texto não são processados de novo", () => {
   const { html } = montarCom(com({ titulo: "{{COR_PRINCIPAL}} $1 $& {{X}}" }));
   assert.ok(html.includes("<h1>{{COR_PRINCIPAL}} $1 $&amp; {{X}}</h1>"));
