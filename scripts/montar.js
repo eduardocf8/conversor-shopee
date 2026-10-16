@@ -30,6 +30,14 @@ const padrao = (regex, explicacao) => (v, campo) => {
 const booleano = (v, campo) => {
   if (typeof v !== "boolean") throw new ConfigInvalida(`"${campo}" precisa ser true ou false.`);
 };
+// Campo que pode ficar de fora do config.json
+const opcional = (regra) => Object.assign((v, campo) => regra(v, campo), { opcional: true });
+
+// Fontes disponíveis, hospedadas junto com o site (modelo/fontes/<nome>/), pesos usados pela página
+const FONTES = {
+  fredoka: { familia: "Fredoka", arquivo: (peso) => `fredoka-latin-${peso}-normal.woff2`, pesos: [400, 600, 700] },
+};
+
 const cor = padrao(/^#[0-9a-fA-F]{6}$/, "use uma cor no formato #RRGGBB, ex: #ee4d2d");
 
 const ESQUEMA = {
@@ -41,6 +49,7 @@ const ESQUEMA = {
   mostrar_faixa_cupons: booleano,
   texto_faixa_cupons: texto(0, 80),
   cores: { principal: cor, escura: cor, fundo: cor },
+  fonte: opcional(padrao(new RegExp(`^(?:${Object.keys(FONTES).join("|")})$`), `fontes disponíveis: ${Object.keys(FONTES).join(", ")} (ou tire o campo pra usar a padrão)`)),
   sub_id: padrao(/^[A-Za-z0-9]{1,100}$/, "só letras sem acento e números (exigência da Shopee)"),
   cloudflare: {
     conta: padrao(/^(?:clientes|pessoal)$/, 'use "clientes" (conta Cloudflare dos clientes) ou "pessoal" (sua conta)'),
@@ -59,7 +68,10 @@ function validar(obj, esquema, prefixo = "") {
   }
   for (const [chave, regra] of Object.entries(esquema)) {
     const campo = prefixo + chave;
-    if (!(chave in obj)) throw new ConfigInvalida(`Falta o campo "${campo}".`);
+    if (!(chave in obj)) {
+      if (regra.opcional) continue;
+      throw new ConfigInvalida(`Falta o campo "${campo}".`);
+    }
     if (typeof regra === "function") regra(obj[chave], campo);
     else validar(obj[chave], regra, campo + ".");
   }
@@ -102,6 +114,15 @@ function lerConfig(cliente, raiz = RAIZ) {
   return { config, foto: bytes };
 }
 
+function cssFonte(nome) {
+  if (!nome) return "";
+  const fonte = FONTES[nome];
+  const faces = fonte.pesos
+    .map((peso) => `  @font-face { font-family: "${fonte.familia}"; src: url("fontes/${fonte.arquivo(peso)}") format("woff2"); font-weight: ${peso}; font-display: swap; }`)
+    .join("\n");
+  return `${faces}\n  body, button, input { font-family: "${fonte.familia}", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }`;
+}
+
 function gerarHtml(modelo, config) {
   let html = modelo.replace(/<!--FAIXA_CUPONS-->\n?([\s\S]*?)<!--\/FAIXA_CUPONS-->\n?/, config.mostrar_faixa_cupons ? "$1" : "");
   const valores = {
@@ -118,6 +139,8 @@ function gerarHtml(modelo, config) {
   };
   html = html.replace(/\{\{([A-Z_]+)\}\}/g, (_, chave) => {
     // Título da página: "\n" no config vira quebra de linha (<br>), depois de escapar o texto
+    // CSS da fonte: montado só a partir da lista fixa FONTES, nunca de texto do cliente
+    if (chave === "CSS_FONTE") return cssFonte(config.fonte);
     if (chave === "TITULO_LINHAS") return escaparHtml(config.titulo).replace(/\s*\n\s*/g, "<br>");
     if (!(chave in valores)) throw new Error(`Marcador desconhecido no modelo: {{${chave}}}`);
     return escaparHtml(valores[chave]);
@@ -186,6 +209,13 @@ function montar(cliente, { raiz = RAIZ, saida = path.join(raiz, "dist"), publica
   fs.copyFileSync(path.join(modelo, "app.js"), path.join(publico, "app.js"));
   fs.copyFileSync(path.join(modelo, "_headers"), path.join(publico, "_headers"));
   fs.writeFileSync(path.join(publico, "foto.jpg"), foto);
+  if (config.fonte) {
+    const fonte = FONTES[config.fonte];
+    fs.mkdirSync(path.join(publico, "fontes"));
+    for (const peso of fonte.pesos) {
+      fs.copyFileSync(path.join(modelo, "fontes", config.fonte, fonte.arquivo(peso)), path.join(publico, "fontes", fonte.arquivo(peso)));
+    }
+  }
   if (config.cloudflare.tipo === "pages") {
     fs.writeFileSync(path.join(destino, "wrangler.jsonc"), gerarWranglerPages(config));
     fs.mkdirSync(path.join(destino, "functions", "api"), { recursive: true });

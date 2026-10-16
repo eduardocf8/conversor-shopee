@@ -77,6 +77,7 @@ Se mandar por mensagem mesmo assim, apague a mensagem depois de cadastrar (passo
   "mostrar_faixa_cupons": false,            // true = mostra a faixa, false = esconde
   "texto_faixa_cupons": "🔥 Restam poucos cupons disponíveis hoje!",
   "cores": { "principal": "#ee4d2d", "escura": "#d73211", "fundo": "#fff5f2" },
+  "fonte": "fredoka",                       // opcional: tire a linha pra usar a fonte padrão (disponíveis: fredoka)
   "sub_id": "site",
   "cloudflare": {
     "conta": "clientes",                    // "clientes" = conta de clientes | "pessoal" = sua conta
@@ -164,6 +165,9 @@ scripts/montar.js  junta modelo + cliente em dist/<nome>/ (página, wrangler.jso
 test/              testes (npm test)
 ```
 
+- Fonte nova: coloque os `.woff2` (subconjunto latin, licença livre como OFL) em `modelo/fontes/<nome>/` e
+  cadastre em `FONTES` no `scripts/montar.js`. As fontes ficam hospedadas no próprio site (a política de
+  segurança bloqueia fontes de fora, como Google Fonts).
 - `npm test` roda todos os testes (segurança do conversor e do montador).
 - `"tipo": "workers"` ainda funciona (endereço `nome.<conta>.workers.dev`, com limitador nativo por minuto),
   mas o padrão é `"pages"`.
