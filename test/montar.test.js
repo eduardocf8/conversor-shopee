@@ -142,6 +142,33 @@ test("título com \\n (quebra de linha) quebra a linha na página e vira ' • '
   assert.throws(() => montarCom(com({ titulo: "a\nb\nc" })), /quebra de linha/);
 });
 
+test("fonte opcional: sem o campo usa a padrão; com fredoka copia os arquivos e aplica na página", () => {
+  const padrao = montarCom(com({}));
+  assert.ok(!padrao.html.includes("@font-face"));
+  assert.ok(!fs.existsSync(path.join(padrao.destino, "public/fontes")));
+
+  const { html, destino } = montarCom(com({ fonte: "fredoka" }));
+  for (const peso of [400, 600, 700]) {
+    const arquivo = `fredoka-latin-${peso}-normal.woff2`;
+    assert.ok(html.includes(`url("fontes/${arquivo}")`), arquivo);
+    const bytes = fs.readFileSync(path.join(destino, "public/fontes", arquivo));
+    assert.equal(bytes.subarray(0, 4).toString(), "wOF2", `${arquivo} não é woff2`);
+  }
+  assert.ok(html.includes('body, button, input { font-family: "Fredoka"'));
+});
+
+test("fonte desconhecida ou com CSS embutido é recusada", () => {
+  for (const fonte of ["Fredoka", "comic", "fredoka; } body { display:none", "../fredoka", "", 1]) {
+    assert.throws(() => montarCom(com({ fonte })), ConfigInvalida, String(fonte));
+  }
+});
+
+test("cabeçalhos de segurança permitem só fontes do próprio site", () => {
+  const headers = fs.readFileSync(path.join(RAIZ_REAL, "modelo/_headers"), "utf8");
+  assert.ok(headers.includes("font-src 'self'"));
+  assert.ok(headers.includes("default-src 'none'"));
+});
+
 test("marcadores {{...}} digitados no texto não são processados de novo", () => {
   const { html } = montarCom(com({ titulo: "{{COR_PRINCIPAL}} $1 $& {{X}}" }));
   assert.ok(html.includes("<h1>{{COR_PRINCIPAL}} $1 $&amp; {{X}}</h1>"));
