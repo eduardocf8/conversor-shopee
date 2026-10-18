@@ -169,6 +169,22 @@ test("cabeçalhos de segurança permitem só fontes do próprio site", () => {
   assert.ok(headers.includes("default-src 'none'"));
 });
 
+test("cores opcionais: fundo da página e faixa de cupons", () => {
+  const padrao = montarCom(com({}));
+  assert.ok(!/--fundo-pagina:|--faixa-fundo:|--faixa-texto:/.test(padrao.html));
+
+  const { html } = montarCom(com({ cores: { ...BASE.cores, fundo_pagina: "#2e1605", faixa_fundo: "#341a06", faixa_texto: "#ffffff" } }));
+  assert.ok(html.includes("--fundo-pagina: #2e1605;"));
+  assert.ok(html.includes("--faixa-fundo: #341a06;"));
+  assert.ok(html.includes("--faixa-texto: #ffffff;"));
+  assert.ok(html.includes("background: var(--fundo-pagina, var(--fundo));"));
+
+  for (const valor of ["red", "#fff", "#000000; } body { display:none"]) {
+    assert.throws(() => montarCom(com({ cores: { ...BASE.cores, faixa_texto: valor } })), ConfigInvalida, valor);
+  }
+  assert.throws(() => montarCom(com({ cores: { ...BASE.cores, fundo_paginaa: "#000000" } })), /Campo desconhecido/);
+});
+
 test("marcadores {{...}} digitados no texto não são processados de novo", () => {
   const { html } = montarCom(com({ titulo: "{{COR_PRINCIPAL}} $1 $& {{X}}" }));
   assert.ok(html.includes("<h1>{{COR_PRINCIPAL}} $1 $&amp; {{X}}</h1>"));

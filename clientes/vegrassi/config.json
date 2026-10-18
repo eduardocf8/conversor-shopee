@@ -9,7 +9,10 @@
   "cores": {
     "principal": "#4c260a",
     "escura": "#341a06",
-    "fundo": "#f7efe7"
+    "fundo": "#f7efe7",
+    "fundo_pagina": "#341a06",
+    "faixa_fundo": "#4c260a",
+    "faixa_texto": "#ffffff"
   },
   "sub_id": "site",
   "cloudflare": {
