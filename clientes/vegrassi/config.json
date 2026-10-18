@@ -7,9 +7,9 @@
   "mostrar_faixa_cupons": true,
   "texto_faixa_cupons": "🔥 Restam poucos cupons disponíveis hoje!",
   "cores": {
-    "principal": "#ee4d2d",
-    "escura": "#d73211",
-    "fundo": "#fff5f2"
+    "principal": "#4c260a",
+    "escura": "#341a06",
+    "fundo": "#f7efe7"
   },
   "sub_id": "site",
   "cloudflare": {
