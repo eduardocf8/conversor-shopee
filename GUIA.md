@@ -77,6 +77,8 @@ Se mandar por mensagem mesmo assim, apague a mensagem depois de cadastrar (passo
   "mostrar_faixa_cupons": false,            // true = mostra a faixa, false = esconde
   "texto_faixa_cupons": "🔥 Restam poucos cupons disponíveis hoje!",
   "cores": { "principal": "#ee4d2d", "escura": "#d73211", "fundo": "#fff5f2" },
+                                            // opcionais em "cores": "fundo_pagina" (em volta do cartão),
+                                            // "faixa_fundo" e "faixa_texto" (faixa de cupons)
   "fonte": "fredoka",                       // opcional: tire a linha pra usar a fonte padrão (disponíveis: fredoka)
   "sub_id": "site",
   "cloudflare": {

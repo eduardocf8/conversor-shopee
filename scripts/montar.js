@@ -48,7 +48,15 @@ const ESQUEMA = {
   texto_botao: texto(1, 40),
   mostrar_faixa_cupons: booleano,
   texto_faixa_cupons: texto(0, 80),
-  cores: { principal: cor, escura: cor, fundo: cor },
+  cores: {
+    principal: cor,
+    escura: cor,
+    fundo: cor,
+    // Opcionais: sem elas, a página usa "fundo" e a faixa de cupons usa tons da cor principal
+    fundo_pagina: opcional(cor),
+    faixa_fundo: opcional(cor),
+    faixa_texto: opcional(cor),
+  },
   fonte: opcional(padrao(new RegExp(`^(?:${Object.keys(FONTES).join("|")})$`), `fontes disponíveis: ${Object.keys(FONTES).join(", ")} (ou tire o campo pra usar a padrão)`)),
   sub_id: padrao(/^[A-Za-z0-9]{1,100}$/, "só letras sem acento e números (exigência da Shopee)"),
   cloudflare: {
@@ -114,6 +122,15 @@ function lerConfig(cliente, raiz = RAIZ) {
   return { config, foto: bytes };
 }
 
+const CORES_OPCIONAIS = { fundo_pagina: "--fundo-pagina", faixa_fundo: "--faixa-fundo", faixa_texto: "--faixa-texto" };
+
+function cssCoresOpcionais(cores) {
+  return Object.entries(CORES_OPCIONAIS)
+    .filter(([campo]) => cores[campo])
+    .map(([campo, variavel]) => `    ${variavel}: ${cores[campo]};`)
+    .join("\n");
+}
+
 function cssFonte(nome) {
   if (!nome) return "";
   const fonte = FONTES[nome];
@@ -141,6 +158,8 @@ function gerarHtml(modelo, config) {
     // Título da página: "\n" no config vira quebra de linha (<br>), depois de escapar o texto
     // CSS da fonte: montado só a partir da lista fixa FONTES, nunca de texto do cliente
     if (chave === "CSS_FONTE") return cssFonte(config.fonte);
+    // Cores opcionais: só valores já validados como #RRGGBB
+    if (chave === "CSS_CORES_OPCIONAIS") return cssCoresOpcionais(config.cores);
     if (chave === "TITULO_LINHAS") return escaparHtml(config.titulo).replace(/\s*\n\s*/g, "<br>");
     if (!(chave in valores)) throw new Error(`Marcador desconhecido no modelo: {{${chave}}}`);
     return escaparHtml(valores[chave]);

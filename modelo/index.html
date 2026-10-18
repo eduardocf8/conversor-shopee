@@ -14,6 +14,7 @@
     --laranja: {{COR_PRINCIPAL}};
     --laranja-escuro: {{COR_ESCURA}};
     --fundo: {{COR_FUNDO}};
+{{CSS_CORES_OPCIONAIS}}
     --texto: #2b2b2b;
     --cinza: #6b7280;
     --borda: color-mix(in srgb, var(--laranja) 18%, #fff);
@@ -21,7 +22,7 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background: var(--fundo);
+    background: var(--fundo-pagina, var(--fundo));
     color: var(--texto);
     min-height: 100vh;
     display: flex;
@@ -171,8 +172,8 @@
 
   /* Faixa de urgência (fogo) */
   .urgencia {
-    background: color-mix(in srgb, var(--laranja) 8%, #fff);
-    color: var(--laranja-escuro);
+    background: var(--faixa-fundo, color-mix(in srgb, var(--laranja) 8%, #fff));
+    color: var(--faixa-texto, var(--laranja-escuro));
     font-size: 13px;
     font-weight: 600;
     padding: 8px 12px;
