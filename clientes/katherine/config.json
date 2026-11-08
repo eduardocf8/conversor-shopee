@@ -1,0 +1,24 @@
+{
+  "nome": "Katherine",
+  "titulo": "Gerador de Links Shopee • Katherine",
+  "subtitulo": "Cupom exclusivo • cole seu link e ganhe desconto",
+  "descricao": "Cole o link do produto da Shopee e ganhe o cupom exclusivo da Katherine.",
+  "texto_botao": "💰 Gerar link com desconto",
+  "mostrar_faixa_cupons": true,
+  "texto_faixa_cupons": "🔥 Restam poucos cupons disponíveis hoje!",
+  "cores": {
+    "principal": "#8c0813",
+    "escura": "#400409",
+    "fundo": "#f8eeef",
+    "fundo_pagina": "#5a2125",
+    "faixa_fundo": "#8c323a",
+    "faixa_texto": "#ffffff"
+  },
+  "sub_id": "siteconversor",
+  "cloudflare": {
+    "conta": "clientes",
+    "tipo": "pages",
+    "nome_projeto": "katherine",
+    "account_id": "7a7caf0c09a4718a967e1d56cc33ce25"
+  }
+}
