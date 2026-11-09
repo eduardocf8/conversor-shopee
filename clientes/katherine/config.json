@@ -7,11 +7,11 @@
   "mostrar_faixa_cupons": true,
   "texto_faixa_cupons": "🔥 Restam poucos cupons disponíveis hoje!",
   "cores": {
-    "principal": "#8c323a",
-    "escura": "#5a2125",
+    "principal": "#270201",
+    "escura": "#140000",
     "fundo": "#f8eeef",
     "fundo_pagina": "#270201",
-    "faixa_fundo": "#8c323a",
+    "faixa_fundo": "#270201",
     "faixa_texto": "#ffffff"
   },
   "sub_id": "siteconversor",
