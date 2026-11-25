@@ -4,7 +4,7 @@
 //   ... d1 list --json | node scripts/banco-sorteio.js id <nome>
 //        imprime o id do banco (vazio se ainda não existe)
 //   node scripts/banco-sorteio.js ligar <wrangler.jsonc> <nome> <id>
-//        liga o banco a um Worker (tipo "workers") como SORTEIO_DB
+//        declara o banco como SORTEIO_DB no wrangler.jsonc (Workers e Pages)
 //   node scripts/banco-sorteio.js corpo-pages <id>
 //        imprime o corpo do PATCH que liga o banco a um projeto Pages
 

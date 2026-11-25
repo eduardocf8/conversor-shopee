@@ -74,9 +74,6 @@ jobs:
               # a Cloudflare usa as ligações do arquivo na publicação
               node ../../scripts/banco-sorteio.js ligar wrangler.jsonc "$BANCO" "$ID_BANCO"
               echo "Banco ligado ao site como SORTEIO_DB."
-              # Diagnóstico: o que o projeto tem gravado (só nomes e ids)
-              curl -fsS "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/$NOME" \
-                -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" | node ../../scripts/diagnostico-pages.js
             fi
             npx wrangler pages deploy --project-name "$NOME" --branch main --commit-dirty=true
             echo "Endereço do site: https://$(npx wrangler pages project list --json | node ../../scripts/projeto-pages.js "$NOME" | cut -d, -f1)"
