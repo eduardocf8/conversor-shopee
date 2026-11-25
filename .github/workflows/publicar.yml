@@ -70,6 +70,9 @@ jobs:
               node ../../scripts/banco-sorteio.js corpo-pages "$ID_BANCO" | curl -fsS -o /dev/null -X PATCH \
                 "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/$NOME" \
                 -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H "Content-Type: application/json" --data-binary @-
+              # O arquivo de configuração do Pages também precisa declarar o banco: com ele presente,
+              # a Cloudflare usa as ligações do arquivo na publicação
+              node ../../scripts/banco-sorteio.js ligar wrangler.jsonc "$BANCO" "$ID_BANCO"
               echo "Banco ligado ao site como SORTEIO_DB."
               # Diagnóstico: o que o projeto tem gravado (só nomes e ids)
               curl -fsS "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/$NOME" \
