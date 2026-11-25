@@ -188,6 +188,21 @@
     98% { transform: translateX(-1px); }
   }
 
+  /* ===== SORTEIO (opcional, por cliente) ===== */
+  .sorteio { margin-top: 26px; text-align: left; border: 2px dashed var(--laranja); border-radius: 16px; padding: 20px 18px; background: var(--fundo); }
+  .sorteio .selo { display: inline-block; background: var(--laranja); color: #fff; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 99px; margin-bottom: 10px; }
+  .sorteio h2 { font-size: 18px; color: var(--laranja-escuro); margin-bottom: 6px; }
+  .sorteio .intro { font-size: 14px; line-height: 1.5; margin-bottom: 6px; }
+  .sorteio .label { margin: 12px 0 6px; }
+  .sorteio .ajuda { font-size: 12px; color: var(--cinza); margin-top: 6px; line-height: 1.4; }
+  .sorteio .aceite { display: flex; gap: 8px; align-items: flex-start; font-size: 12px; color: var(--cinza); margin-top: 14px; line-height: 1.4; cursor: pointer; }
+  .sorteio .aceite input { width: auto; margin-top: 2px; }
+  .sorteio .invalido { border-color: #b91c1c; }
+  .sorteio button { margin-top: 16px; animation: none; }
+  .sorteio .regras { display: block; text-align: center; font-size: 12px; margin-top: 10px; color: var(--laranja-escuro); }
+  .sorteio .armadilha { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+  .sorteio .sucesso { font-size: 15px; line-height: 1.5; text-align: center; padding: 8px 0; }
+
   /* Fonte do cliente (vazio = fonte padrão do sistema) */
 {{CSS_FONTE}}
 </style>
@@ -215,6 +230,36 @@
       </div>
     </div>
 
+<!--SORTEIO-->
+    <div class="sorteio" id="sorteio">
+      <span class="selo">{{SORTEIO_SELO}}</span>
+      <h2>{{SORTEIO_TITULO}}</h2>
+      <p class="intro">{{SORTEIO_TEXTO}}</p>
+
+      <form id="sorteioForm" novalidate>
+        <label class="label" for="sNome">Nome completo</label>
+        <input id="sNome" name="nome" autocomplete="name" maxlength="80" placeholder="Insira seu nome completo">
+
+        <label class="label" for="sPedido">Número do pedido</label>
+        <input id="sPedido" name="pedido" maxlength="24" autocapitalize="characters" placeholder="Ex: 251125ABCD1234">
+        <div class="ajuda">No app da Shopee: <b>Eu → Minhas compras</b> → toque no pedido → copie o <b>ID do pedido</b>.</div>
+
+        <label class="label" for="sWhats">WhatsApp com DDD</label>
+        <input id="sWhats" name="whatsapp" inputmode="numeric" autocomplete="tel-national" maxlength="15" placeholder="(11) 91234-5678">
+        <div class="ajuda">É por ele que você recebe o aviso se ganhar.</div>
+
+        <div class="armadilha" aria-hidden="true"><input name="site" id="sSite" tabindex="-1" autocomplete="off"></div>
+
+        <label class="aceite"><input type="checkbox" id="sAceite"> Autorizo {{NOME}} a usar esses dados só para conferir a compra e falar comigo sobre este sorteio. Eles ficam guardados apenas até o resultado e depois são apagados.</label>
+
+        <button type="submit" id="sBotao">Quero participar</button>
+        <div class="erro" id="sErro"></div>
+      </form>
+<!--SORTEIO_REGULAMENTO-->
+      <a class="regras" href="{{SORTEIO_REGULAMENTO}}" target="_blank" rel="noopener noreferrer">Ver o regulamento</a>
+<!--/SORTEIO_REGULAMENTO-->
+    </div>
+<!--/SORTEIO-->
     <div class="passos">
       <h3>📋 Como funciona?</h3>
       1️⃣ Copie o link do produto na Shopee<br>

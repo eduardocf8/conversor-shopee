@@ -45,7 +45,7 @@ function ehDoDominio(host, dominios) {
   return dominios.some((d) => host === d || host.endsWith("." + d));
 }
 
-function responder(status, corpo, extras = {}) {
+export function responder(status, corpo, extras = {}) {
   return new Response(JSON.stringify(corpo), {
     status,
     headers: {
@@ -135,7 +135,7 @@ async function resolverLinkCurto(url) {
 // Pedido feito por outro site (ex: um site malicioso disparando conversões pelo
 // navegador de quem o visita). Pedidos sem Origin (curl, servidores) não dá pra
 // barrar por aqui — pra esses existe o limite por IP.
-function veioDeOutroSite(request) {
+export function veioDeOutroSite(request) {
   const origem = request.headers.get("origin");
   if (!origem) return false;
   try {
@@ -146,7 +146,7 @@ function veioDeOutroSite(request) {
 }
 
 // Lê o corpo sem aceitar mais que `maximo` bytes (não confia no Content-Length)
-async function lerCorpoLimitado(request, maximo) {
+export async function lerCorpoLimitado(request, maximo) {
   if (Number(request.headers.get("content-length") || 0) > maximo) return null;
   if (!request.body) return "";
   const leitor = request.body.getReader();

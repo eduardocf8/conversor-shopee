@@ -124,6 +124,31 @@ para e diz exatamente o que corrigir.
 
 ---
 
+## 2.6 Sorteio (opcional)
+
+Formulário em que quem comprou pelo link do cliente se inscreve com **nome completo, número do pedido e
+WhatsApp**. Para ligar, acrescente no `config.json` do cliente:
+
+```json
+"sorteio": {
+  "selo": "🎁 SORTEIO DE BLACK FRIDAY",
+  "titulo": "Comprou pelo meu link? Participe do sorteio!",
+  "texto": "Registre o número do pedido que você fez pelo meu link. Cada pedido vale uma chance.",
+  "regulamento": "https://link-do-regulamento (opcional; sem ele, o link não aparece)"
+}
+```
+
+- As inscrições ficam num banco D1 da conta Cloudflare do site, criado sozinho na primeira publicação
+  (`sorteio-<nome_projeto>`). O token da conta precisa da permissão **Account → D1 → Edit**.
+- Cada número de pedido entra uma vez só; o WhatsApp precisa ser celular com DDD (11 números).
+- **Senha da área do dono:** no projeto do site → Settings → Variables and Secrets → Add, tipo **Secret**,
+  nome `SORTEIO_SENHA`, com pelo menos 12 caracteres. Depois publique de novo.
+- **Baixar e apagar:** abra `https://<endereço do site>/sorteio-admin`, digite a senha e clique em
+  **Baixar planilha** (abre no Excel). Depois do resultado, digite APAGAR e clique em **Apagar tudo**: o
+  texto do formulário promete que os dados são apagados depois do resultado.
+- ⚠️ Sorteio que exige compra para participar normalmente precisa de autorização do Ministério da Fazenda
+  (Lei 5.768/71). O cliente deve confirmar isso antes de divulgar.
+
 ## 3. Atualizar o site de um cliente
 
 Mudou texto, cor, foto ou saiu uma correção no modelo? Edite o que precisar e rode de novo

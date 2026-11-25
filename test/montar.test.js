@@ -80,6 +80,7 @@ test("tipo pages: wrangler.jsonc de Pages e função com o SUB_ID do cliente", (
     tipo: "pages",
     nome: BASE.cloudflare.nome_projeto,
     account_id: BASE.cloudflare.account_id,
+    sorteio_banco: null,
   });
 });
 
@@ -183,6 +184,43 @@ test("cores opcionais: fundo da página e faixa de cupons", () => {
     assert.throws(() => montarCom(com({ cores: { ...BASE.cores, faixa_texto: valor } })), ConfigInvalida, valor);
   }
   assert.throws(() => montarCom(com({ cores: { ...BASE.cores, fundo_paginaa: "#000000" } })), /Campo desconhecido/);
+});
+
+const SORTEIO = { selo: "🎁 SORTEIO", titulo: "Comprou pelo meu link?", texto: "Registre o pedido." };
+
+test("sorteio desligado: nada de formulário, área do dono, funções nem banco", () => {
+  const { html, destino } = montarCom(com({ cloudflare: { ...BASE.cloudflare, tipo: "pages" } }));
+  assert.ok(!html.includes("sorteioForm"));
+  assert.ok(!html.includes("<!--SORTEIO") && !html.includes("SORTEIO_"));
+  assert.ok(!fs.existsSync(path.join(destino, "public/sorteio-admin.html")));
+  assert.ok(!fs.existsSync(path.join(destino, "functions/api/sorteio.js")));
+  assert.equal(JSON.parse(fs.readFileSync(path.join(destino, "publicar.json"))).sorteio_banco, null);
+});
+
+test("sorteio ligado: formulário, área do dono, funções e nome do banco", () => {
+  const { html, destino } = montarCom(com({ nome: "fulana", sorteio: SORTEIO, cloudflare: { ...BASE.cloudflare, tipo: "pages", nome_projeto: "fulana" } }));
+  assert.ok(html.includes('id="sorteioForm"'));
+  assert.ok(html.includes("<h2>Comprou pelo meu link?</h2>"));
+  assert.ok(html.includes('placeholder="Insira seu nome completo"'));
+  assert.ok(html.includes("Autorizo fulana a usar"));
+  assert.ok(!html.includes("Ver o regulamento"), "sem regulamento, sem link");
+  assert.ok(!html.includes("{{") && !html.includes("SORTEIO_"));
+  for (const arquivo of ["public/sorteio-admin.html", "public/sorteio-admin.js", "functions/api/sorteio.js", "functions/api/sorteio-admin.js"]) {
+    assert.ok(fs.existsSync(path.join(destino, arquivo)), arquivo);
+  }
+  assert.equal(JSON.parse(fs.readFileSync(path.join(destino, "publicar.json"))).sorteio_banco, "sorteio-fulana");
+});
+
+test("sorteio: regulamento opcional e validado, textos escapados", () => {
+  const { html } = montarCom(com({ sorteio: { ...SORTEIO, titulo: "<script>x</script>", regulamento: "https://exemplo.com/regras" } }));
+  assert.ok(html.includes('href="https://exemplo.com/regras"'));
+  assert.ok(html.includes("&lt;script&gt;x&lt;/script&gt;"));
+  for (const regulamento of ["javascript:alert(1)", "http://exemplo.com", 'https://x.com/"onmouseover=1', ""]) {
+    assert.throws(() => montarCom(com({ sorteio: { ...SORTEIO, regulamento } })), ConfigInvalida, regulamento);
+  }
+  assert.throws(() => montarCom(com({ sorteio: { ...SORTEIO, premio: "x" } })), /Campo desconhecido "sorteio.premio"/);
+  assert.throws(() => montarCom(com({ sorteio: { selo: "x", texto: "" } })), /Falta o campo "sorteio.titulo"/);
+  assert.throws(() => montarCom(com({ __opcional: true })), /Campo desconhecido/);
 });
 
 test("marcadores {{...}} digitados no texto não são processados de novo", () => {

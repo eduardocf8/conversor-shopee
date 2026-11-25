@@ -50,13 +50,31 @@ jobs:
           TIPO=$(node -p 'require("./publicar.json").tipo')
           NOME=$(node -p 'require("./publicar.json").nome')
           export CLOUDFLARE_ACCOUNT_ID=$(node -p 'require("./publicar.json").account_id')
+          # Sorteio ligado: cria o banco D1 na primeira vez (precisa da permissão "D1: Edit" no token)
+          BANCO=$(node -p 'require("./publicar.json").sorteio_banco || ""')
+          if [ -n "$BANCO" ]; then
+            ID_BANCO=$(npx wrangler d1 list --json | node ../../scripts/banco-sorteio.js id "$BANCO")
+            if [ -z "$ID_BANCO" ]; then
+              npx wrangler d1 create "$BANCO" --location enam
+              ID_BANCO=$(npx wrangler d1 list --json | node ../../scripts/banco-sorteio.js id "$BANCO")
+            fi
+            echo "Banco do sorteio: $BANCO"
+          fi
           if [ "$TIPO" = "pages" ]; then
             # Cria o projeto Pages na primeira publicação
             if ! npx wrangler pages project list --json | node ../../scripts/projeto-pages.js "$NOME" > /dev/null; then
               npx wrangler pages project create "$NOME" --production-branch main
             fi
+            if [ -n "$BANCO" ]; then
+              # Liga o banco ao projeto como SORTEIO_DB (o arquivo de configuração não basta no Pages)
+              node ../../scripts/banco-sorteio.js corpo-pages "$ID_BANCO" | curl -fsS -o /dev/null -X PATCH \
+                "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/$NOME" \
+                -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H "Content-Type: application/json" --data-binary @-
+              echo "Banco ligado ao site como SORTEIO_DB."
+            fi
             npx wrangler pages deploy --project-name "$NOME" --branch main --commit-dirty=true
             echo "Endereço do site: https://$(npx wrangler pages project list --json | node ../../scripts/projeto-pages.js "$NOME" | cut -d, -f1)"
           else
+            if [ -n "$BANCO" ]; then node ../../scripts/banco-sorteio.js ligar wrangler.jsonc "$BANCO" "$ID_BANCO"; fi
             npx wrangler deploy --config wrangler.jsonc
           fi
