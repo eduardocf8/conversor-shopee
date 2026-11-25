@@ -9,7 +9,7 @@
 //   public/          a página
 //   wrangler.jsonc   configuração da Cloudflare
 //   functions/       (só no tipo "pages") o conversor como Pages Function
-//   publicar.json    conta, tipo, nome e account_id, lidos pelo workflow de publicação
+//   publicar.json    conta, tipo, nome, account_id e banco do sorteio, lidos pelo workflow de publicação
 
 const fs = require("fs");
 const path = require("path");
@@ -31,7 +31,12 @@ const booleano = (v, campo) => {
   if (typeof v !== "boolean") throw new ConfigInvalida(`"${campo}" precisa ser true ou false.`);
 };
 // Campo que pode ficar de fora do config.json
-const opcional = (regra) => Object.assign((v, campo) => regra(v, campo), { opcional: true });
+const opcional = (regra) => {
+  if (typeof regra === "function") return Object.assign((v, campo) => regra(v, campo), { opcional: true });
+  // Grupo de campos opcional (ex: "sorteio"): marca escondida, não vira campo aceito no config
+  return Object.defineProperty({ ...regra }, "__opcional", { value: true, enumerable: false });
+};
+const ehOpcional = (regra) => Boolean(regra.opcional || regra.__opcional);
 
 // Fontes disponíveis, hospedadas junto com o site (modelo/fontes/<nome>/), pesos usados pela página
 const FONTES = {
@@ -58,6 +63,13 @@ const ESQUEMA = {
     faixa_texto: opcional(cor),
   },
   fonte: opcional(padrao(new RegExp(`^(?:${Object.keys(FONTES).join("|")})$`), `fontes disponíveis: ${Object.keys(FONTES).join(", ")} (ou tire o campo pra usar a padrão)`)),
+  // Opcional: formulário de inscrição no sorteio (nome, número do pedido e WhatsApp)
+  sorteio: opcional({
+    selo: texto(1, 40),
+    titulo: texto(1, 100),
+    texto: texto(0, 300),
+    regulamento: opcional(padrao(/^https:\/\/[^\s"'<>]{1,300}$/, "use um link completo começando com https://")),
+  }),
   sub_id: padrao(/^[A-Za-z0-9]{1,100}$/, "só letras sem acento e números (exigência da Shopee)"),
   cloudflare: {
     conta: padrao(/^(?:clientes|pessoal)$/, 'use "clientes" (conta Cloudflare dos clientes) ou "pessoal" (sua conta)'),
@@ -72,12 +84,12 @@ function validar(obj, esquema, prefixo = "") {
     throw new ConfigInvalida(`"${prefixo || "config"}" precisa ser um objeto { }.`);
   }
   for (const chave of Object.keys(obj)) {
-    if (!(chave in esquema)) throw new ConfigInvalida(`Campo desconhecido "${prefixo}${chave}" (erro de digitação?).`);
+    if (!Object.prototype.hasOwnProperty.call(esquema, chave) || chave === "__opcional") throw new ConfigInvalida(`Campo desconhecido "${prefixo}${chave}" (erro de digitação?).`);
   }
   for (const [chave, regra] of Object.entries(esquema)) {
     const campo = prefixo + chave;
     if (!(chave in obj)) {
-      if (regra.opcional) continue;
+      if (ehOpcional(regra)) continue;
       throw new ConfigInvalida(`Falta o campo "${campo}".`);
     }
     if (typeof regra === "function") regra(obj[chave], campo);
@@ -142,6 +154,9 @@ function cssFonte(nome) {
 
 function gerarHtml(modelo, config) {
   let html = modelo.replace(/<!--FAIXA_CUPONS-->\n?([\s\S]*?)<!--\/FAIXA_CUPONS-->\n?/, config.mostrar_faixa_cupons ? "$1" : "");
+  const sorteio = config.sorteio;
+  html = html.replace(/<!--SORTEIO-->\n?([\s\S]*?)<!--\/SORTEIO-->\n?/, sorteio ? "$1" : "");
+  html = html.replace(/<!--SORTEIO_REGULAMENTO-->\n?([\s\S]*?)<!--\/SORTEIO_REGULAMENTO-->\n?/, sorteio && sorteio.regulamento ? "$1" : "");
   const valores = {
     NOME: config.nome,
     // Aba do navegador e prévia de link: uma linha só ("\n" vira " • ")
@@ -154,6 +169,14 @@ function gerarHtml(modelo, config) {
     COR_ESCURA: config.cores.escura,
     COR_FUNDO: config.cores.fundo,
   };
+  if (sorteio) {
+    Object.assign(valores, {
+      SORTEIO_SELO: sorteio.selo,
+      SORTEIO_TITULO: sorteio.titulo,
+      SORTEIO_TEXTO: sorteio.texto,
+      SORTEIO_REGULAMENTO: sorteio.regulamento || "",
+    });
+  }
   html = html.replace(/\{\{([A-Z_]+)\}\}/g, (_, chave) => {
     // Título da página: "\n" no config vira quebra de linha (<br>), depois de escapar o texto
     // CSS da fonte: montado só a partir da lista fixa FONTES, nunca de texto do cliente
@@ -200,6 +223,15 @@ function gerarWranglerPages(config) {
   return JSON.stringify(wrangler, null, 2) + "\n";
 }
 
+// Funções do sorteio no Pages (a gravação e a área do dono)
+function gerarFuncoesSorteio() {
+  const cabecalho = "// Gerado por scripts/montar.js — não edite à mão.\n";
+  return {
+    "sorteio.js": `${cabecalho}import { tratarInscricao } from "../../../../src/sorteio.js";\n\nexport const onRequest = ({ request, env }) => tratarInscricao(request, env);\n`,
+    "sorteio-admin.js": `${cabecalho}import { tratarAdmin } from "../../../../src/sorteio.js";\n\nexport const onRequest = ({ request, env }) => tratarAdmin(request, env);\n`,
+  };
+}
+
 // O Pages só roda funções da pasta functions/; o SUB_ID vai direto no código
 // porque as "vars" do arquivo de configuração não chegam às funções do Pages.
 function gerarFuncaoPages(config) {
@@ -228,6 +260,10 @@ function montar(cliente, { raiz = RAIZ, saida = path.join(raiz, "dist"), publica
   fs.copyFileSync(path.join(modelo, "app.js"), path.join(publico, "app.js"));
   fs.copyFileSync(path.join(modelo, "_headers"), path.join(publico, "_headers"));
   fs.writeFileSync(path.join(publico, "foto.jpg"), foto);
+  if (config.sorteio) {
+    fs.copyFileSync(path.join(modelo, "sorteio-admin.html"), path.join(publico, "sorteio-admin.html"));
+    fs.copyFileSync(path.join(modelo, "sorteio-admin.js"), path.join(publico, "sorteio-admin.js"));
+  }
   if (config.fonte) {
     const fonte = FONTES[config.fonte];
     fs.mkdirSync(path.join(publico, "fontes"));
@@ -239,10 +275,22 @@ function montar(cliente, { raiz = RAIZ, saida = path.join(raiz, "dist"), publica
     fs.writeFileSync(path.join(destino, "wrangler.jsonc"), gerarWranglerPages(config));
     fs.mkdirSync(path.join(destino, "functions", "api"), { recursive: true });
     fs.writeFileSync(path.join(destino, "functions", "api", "converter.js"), gerarFuncaoPages(config));
+    if (config.sorteio) {
+      for (const [arquivo, codigo] of Object.entries(gerarFuncoesSorteio())) {
+        fs.writeFileSync(path.join(destino, "functions", "api", arquivo), codigo);
+      }
+    }
   } else {
     fs.writeFileSync(path.join(destino, "wrangler.jsonc"), gerarWranglerWorkers(config));
   }
-  const dadosPublicacao = { conta: config.cloudflare.conta, tipo: config.cloudflare.tipo, nome: config.cloudflare.nome_projeto, account_id: config.cloudflare.account_id };
+  const dadosPublicacao = {
+    conta: config.cloudflare.conta,
+    tipo: config.cloudflare.tipo,
+    nome: config.cloudflare.nome_projeto,
+    account_id: config.cloudflare.account_id,
+    // Banco D1 do sorteio: o workflow cria (se faltar) e liga ao site como SORTEIO_DB
+    sorteio_banco: config.sorteio ? `sorteio-${config.cloudflare.nome_projeto}` : null,
+  };
   fs.writeFileSync(path.join(destino, "publicar.json"), JSON.stringify(dadosPublicacao, null, 2) + "\n");
   return destino;
 }

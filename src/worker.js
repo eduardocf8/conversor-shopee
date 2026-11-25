@@ -4,6 +4,7 @@
 // cabeçalhos de segurança do arquivo modelo/_headers.
 
 import { tratarConversao } from "./converter.js";
+import { tratarInscricao, tratarAdmin } from "./sorteio.js";
 
 export default {
   async fetch(request, env) {
@@ -11,6 +12,8 @@ export default {
     if (pathname === "/api/converter") {
       return tratarConversao(request, env);
     }
+    if (pathname === "/api/sorteio") return tratarInscricao(request, env);
+    if (pathname === "/api/sorteio-admin") return tratarAdmin(request, env);
     if (pathname.startsWith("/api/")) {
       return new Response(JSON.stringify({ erro: "Não encontrado" }), {
         status: 404,

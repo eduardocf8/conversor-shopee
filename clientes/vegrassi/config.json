@@ -14,6 +14,11 @@
     "faixa_fundo": "#4c260a",
     "faixa_texto": "#ffffff"
   },
+  "sorteio": {
+    "selo": "🎁 SORTEIO DE BLACK FRIDAY",
+    "titulo": "Comprou pelo meu link? Participe do sorteio!",
+    "texto": "Registre o número do pedido que você fez pelo meu link na Black Friday. Cada pedido vale uma chance, e o resultado sai no meu Instagram."
+  },
   "sub_id": "site",
   "cloudflare": {
     "conta": "pessoal",
